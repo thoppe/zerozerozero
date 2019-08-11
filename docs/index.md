@@ -1,7 +1,7 @@
 % Title: zerozerozero Hack&&Tell presentation
 % Author: Travis Hoppe
 
-!!(https://source.unsplash.com/oQbLeq4nOek class="light")
+!!(figures/oQbLeq4nOek.jpg class="light")
 
 ...bg-black
 ..aligncenter
@@ -28,8 +28,7 @@
 [Hack && Tell Round #31](https://github.com/thoppe/imaginary_rotoscopes)
 
 
-## <video loop autoplay width=30% autoplay="autoplay"><source src="figures/roto/unity.mp4"/></video> <video loop autoplay width=30% autoplay="autoplay"><source src="figures/roto/signs.mp4"/></video>
-## <video loop autoplay width=30% autoplay="autoplay"><source src="figures/roto/ordered_15.mp4"/></video> <video loop autoplay width=30% autoplay="autoplay"><source src="figures/roto/wigglewigglewiggle.mp4"/></video>
+## <video muted loop autoplay width=25% autoplay="autoplay"><source src="figures/roto/unity.mp4"/></video> <video muted loop autoplay width=25% autoplay="autoplay"><source src="figures/roto/ordered_15.mp4"/></video> <video muted loop autoplay width=25% autoplay="autoplay"><source src="figures/roto/wigglewigglewiggle.mp4"/></video>
 
 
 
