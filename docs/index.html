@@ -8,6 +8,7 @@
   <link href="static/css/webslides.css" media="all" rel="stylesheet" type="text/css"/>
   <link href="static/css/miniprez.css" media="all" rel="stylesheet" type="text/css"/>
   <link href="https://fonts.googleapis.com/css?family=Roboto:100,100i,300,300i,400,400i,700,700i%7CMaitree:200,300,400,600,700&amp;amp;subset=latin-ext" media="all" rel="stylesheet" type="text/css"/>
+  <link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/katex@0.10.1/dist/katex.min.css" integrity="sha384-dbVIfZGuN1Yq7/1Ocstc1lUEm+AT+/rCkibIcC/OmWo5f0EA48Vf8CytHzGrSwbQ" media="all" rel="stylesheet" type="text/css"/>
  </head>
  <body>
   <article id="webslides">
@@ -62,10 +63,60 @@
      </video>
     </h2>
    </section>
+   <section class="slide bg-white aligncenter" data-slide-number="3">
+    <h1 class="text-data">
+     <strong>
+      Math Review
+     </strong>
+     😄
+    </h1>
+    <br/>
+    <br/>
+    <br/>
+    <h2>
+     <span class="inline-equation" data-expr="ax^2 + bx + c = 0">
+     </span>
+    </h2>
+    <h2>
+     <div class="block-equation" data-expr="x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}">
+     </div>
+    </h2>
+    <h4>
+     Quadartic polynomials
+     <strong>
+      always
+     </strong>
+     have two roots
+    </h4>
+    <h4>
+     Roots can be real or complex
+    </h4>
+    <br/>
+    <br/>
+    <br/>
+    <h2>
+     <span class="inline-equation" data-expr="a_n x^n + a_{n-1} x^{n-1} + \dots + a_0 = 0">
+     </span>
+    </h2>
+    <h4>
+     Always has n roots (may not be unique)
+    </h4>
+    <h4>
+     If
+     <em>
+      a
+     </em>
+     are all real, then all the roots are real
+    </h4>
+   </section>
   </article>
   <script src="static/js/jquery-3.1.1.min.js">
   </script>
   <script src="static/js/slider.js">
+  </script>
+  <script crossorigin="anonymous" integrity="sha384-2BKqo+exmr9su6dir+qCw08N2ZKRucY4PrGQPPWU1A7FtlCGjmEGFqXCv5nyM5Ij" src="https://cdn.jsdelivr.net/npm/katex@0.10.1/dist/katex.min.js">
+  </script>
+  <script src="static/js/render_equations.js">
   </script>
  </body>
 </html>
