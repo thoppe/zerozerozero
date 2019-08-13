@@ -34,7 +34,7 @@
 
 ...bg-white
 ...aligncenter
-# .text-data **Math Review**  :smile:
+# .text-landing **Math Review**  🧪
 
 <br/><br/><br/>
 
@@ -46,9 +46,46 @@
 <br/><br/><br/>
 
 ## $a_n x^n + a_{n-1} x^{n-1} + \dots + a_0 = 0$
-#### Always has n roots (may not be unique)
+#### Always has n (possibly complex) roots
 #### If _a_ are all real, then all the roots are real
 
+-----
+
+...bg-white
+...aligncenter
+## !(figures/000075.png width=50%)
+
+### For a given polynomial: $p = \sum_n^N a_n x^n$
+### Add random imaginary component: $p + \sum_n^N i b_n; b_n \in \mathcal{N}(0,1)$
+
+-----
+...aligncenter.bg-black
+
+## <video muted loop autoplay width=85% autoplay="autoplay"><source src="figures/animated_roots.webm"/></video>
+
+-----
+
+...bg-black
+...aligncenter
+!!(figures/000075.png)
+
+# Questions:
+
++ Can one compute the distributions of roots?
++ Do other distributions than $\mathcal{N}$ give different results?
++ Complex coefficients lead to symmetry breaking, but why so subtle?
++ Is there a better way to color the roots?
+
+-----
+
+..wrap
+
+## **Thanks, you!**
+#### Contribute, or suggest an issue at
+## [https://github.com/thoppe/zerozerozero](https://github.com/thoppe/zerozerozero)
+
+#### Comment at
+## [@metasemantic](https://twitter.com/metasemantic?lang=en)
 
 
 

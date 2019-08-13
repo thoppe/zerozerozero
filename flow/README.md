@@ -1,0 +1,1 @@
+This directory is an attempt to calculate optical flows and color based off that. Currently a work-in-progress.
