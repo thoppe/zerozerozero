@@ -1,0 +1,15 @@
+# markdown parser
+mistune
+
+docopt
+bs4
+html5lib
+emoji
+
+coloredlogs
+
+# For testing
+Fabric3
+
+# For linting
+black

@@ -1,0 +1,15 @@
+*.pyc
+*~
+\#*
+.\#*
+
+# pyenv file
+.python-version
+
+# Testing files
+#.coverage
+#.tox
+#miniprez.egg-info
+
+# Temp files
+static
