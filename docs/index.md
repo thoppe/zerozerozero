@@ -40,7 +40,7 @@
 
 ## $ax^2 + bx + c = 0$
 ## $$ x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$
-#### Quadartic polynomials **always** have two roots
+#### Quadratic polynomials **always** have two roots
 #### Roots can be real or complex
 
 <br/><br/><br/>
