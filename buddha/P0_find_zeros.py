@@ -7,13 +7,13 @@ import sys, os
 import pixelhouse as ph
 
 alpha = 2.0
-extent = 2
-resolution = 800
+extent = 1.5
+resolution = 400
 
-N = 500000
+N = 500000*10
 iterations = 100
 
-def get_iterations(N, alpha):
+def get_iterations(N, alpha, iterations):
 
     C = np.random.normal(size=(N,2))
     #C = np.random.uniform(-extent, extent, size=(N,2))
@@ -24,13 +24,10 @@ def get_iterations(N, alpha):
     data = []
     for _ in tqdm(range(iterations)):
         Z = Z**alpha + C
-        #idx = np.isnan(Z)
-        #C[idx] = 0
-        #Z[idx] = 0
         data.append(Z)
 
+    # Drop the points that don't escape
     idx = np.isnan(data[-1])
-    #C = C[idx]
     data = np.hstack([z[idx] for z in data])
 
     # Drop the nans
@@ -39,50 +36,39 @@ def get_iterations(N, alpha):
     X, Y = data.real, data.imag
     return X,Y
 
+def pts_to_bins(X, Y, resolution, dx):
+    
+    idx = (np.abs(X)>=(extent-dx)) | (np.abs(Y)>=(extent-dx))
+    X = X[~idx]; Y = Y[~idx]
 
-#X, Y = get_iterations(N, alpha)
-#print(X)
-#exit()
+    binx = np.round(X/dx).astype(int)
+    biny = np.round(Y/dx).astype(int)
+
+    binx += resolution//2
+    biny += resolution//2
+
+    img = np.zeros(shape=c.shape[:2])
+    for i,j in tqdm(zip(binx, biny)):
+        img[i,j] += 1
+
+    return img
+
+
 
 c = ph.Canvas(resolution, resolution, extent=extent)
 dx = (2*c.extent)/c.width
 
-X, Y = get_iterations(N, alpha)
-
-idx = (np.abs(X)>=extent) | (np.abs(Y)>=extent)
-X = X[~idx]; Y = Y[~idx]
-
-binx = np.round(X/dx).astype(int)
-biny = np.round(Y/dx).astype(int)
-
-binx += resolution//2
-biny += resolution//2
-
-idx = (binx < 0) | (biny < 0) | (binx >= resolution) | (biny >= resolution)
-binx = binx[~idx]
-biny = biny[~idx]
-
-img = np.zeros(shape=c.shape[:2])
-for i,j in tqdm(zip(binx, biny)):
-    img[i,j] += 1
-
-    '''
-    try:
-        
-    except IndexError:
-        print(i,j)
-        continue
-    '''
+ITR = [100, 200, 300]
+for k, iterations in enumerate(ITR):
     
-img /= img.max()
-img *= 255
+    X, Y = get_iterations(N, alpha, iterations=iterations)
 
-#img = np.log(img+1)
-#img /= img.max()
-#img *= 255
+    img = pts_to_bins(X, Y, resolution, dx)
+    img /= img.max()
+    img *= 255
+    img *= 1.2
+    img = img.astype(c.img.dtype)
+    c.img[:,:,k] = img
 
-#img = (img>0)*255
 
-img = img.astype(c.img.dtype)
-c.img[:,:,0] = img
 c.show()
