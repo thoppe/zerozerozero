@@ -94,8 +94,6 @@ def pts_to_bins(X, Y, resolution, dx):
 
     idx = (np.abs(X) >= (extent - dx)) | (np.abs(Y) >= (extent - dx))
 
-    print((~idx).mean())
-
     X = X[~idx]
     Y = Y[~idx]
 
@@ -115,18 +113,30 @@ def pts_to_bins(X, Y, resolution, dx):
 c = ph.Canvas(resolution, resolution, extent=extent)
 dx = (2 * c.extent) / c.width
 
-# ITR = [100, 200, 300]
+#ITR = [100, 200, 300]
 ITR = [100]
 for k, iterations in enumerate(ITR):
 
     X, Y = get_iterations(N, alpha, iterations=iterations)
+    print(f"Found {len(X)//10**6}*10**6 points")
 
-    img = pts_to_bins(X, Y, resolution, dx)
-    img /= img.max()
-    img *= 255
-    img *= 1.2
+    counts = pts_to_bins(X, Y, resolution, dx)
+
+    _, bins = np.histogram(counts.ravel(), bins=255)
+    norm_color = np.digitize(counts, bins,True)
+
+    img = norm_color
+    
+    #img = counts / counts.max()
+    #img *= 255
+    #img *= 1.2
+
     img = img.astype(c.img.dtype)
-    c.img[:, :, k] = img
+    #c.img[:, :, k] = img
+    
+    c.img[:, :, 0] = img
+    c.img[:, :, 1] = img
+    c.img[:, :, 2] = img
 
 
 c.show()
