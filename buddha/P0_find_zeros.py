@@ -86,27 +86,20 @@ def get_iterations(N, alpha, iterations):
     # Drop the nans
     data = data[~np.isnan(data)]
 
-    X, Y = data.real, data.imag
-    return X, Y
+    data = np.vstack([data.real, data.imag]).T
+    return data
 
+def pts_to_bins(pts, resolution, dx):
 
-def pts_to_bins(X, Y, resolution, dx):
-
+    X, Y = pts.T
     idx = (np.abs(X) >= (extent - dx)) | (np.abs(Y) >= (extent - dx))
 
-    X = X[~idx]
-    Y = Y[~idx]
-
-    binx = np.round(X / dx).astype(int)
-    biny = np.round(Y / dx).astype(int)
-
-    binx += resolution // 2
-    biny += resolution // 2
-
-    shape = (resolution, resolution)
-    img, _ = np.histogramdd([binx, biny], bins=shape)
+    pts = np.round(pts[~idx] / dx).astype(int)
+    pts += resolution // 2
     
+    img, _ = np.histogramdd(pts, bins=(resolution, resolution))
     return img
+
 
 def bins_to_image(counts, resolution):
     
@@ -128,12 +121,12 @@ dx = (2 * c.extent) / c.width
 ITR = [100]
 for k, iterations in enumerate(ITR):
 
-    X, Y = get_iterations(N, alpha, iterations=iterations)
-    print(f"Found {len(X)//10**6}*10**6 points")
+    pts = get_iterations(N, alpha, iterations=iterations)
+    print(f"Found {len(pts)//10**6}*10**6 points")
 
-    counts = pts_to_bins(X, Y, resolution, dx)
+    counts = pts_to_bins(pts, resolution, dx)
     img = bins_to_image(counts, resolution)
-
+    exit()
         
     c.img[:, :, 0] = img
     c.img[:, :, 1] = img
