@@ -10,20 +10,26 @@ alpha = 2.0
 extent = 1.5
 resolution = 400
 
-N = 500000*10
+N = 500000 // 10
 iterations = 100
+
+
+def generate_starting_points(alpha):
+
+    C = np.random.normal(size=(N, 2))
+    C = C[:, 0] + C[:, 1] * 1j
+
+    return C
+
 
 def get_iterations(N, alpha, iterations):
 
-    C = np.random.normal(size=(N,2))
-    #C = np.random.uniform(-extent, extent, size=(N,2))
-    
-    C = C[:, 0] + C[:, 1]*1J
+    C = generate_starting_points(alpha)
     Z = np.zeros_like(C)
 
     data = []
     for _ in tqdm(range(iterations)):
-        Z = Z**alpha + C
+        Z = Z ** alpha + C
         data.append(Z)
 
     # Drop the points that don't escape
@@ -34,33 +40,34 @@ def get_iterations(N, alpha, iterations):
     data = data[~np.isnan(data)]
 
     X, Y = data.real, data.imag
-    return X,Y
+    return X, Y
+
 
 def pts_to_bins(X, Y, resolution, dx):
-    
-    idx = (np.abs(X)>=(extent-dx)) | (np.abs(Y)>=(extent-dx))
-    X = X[~idx]; Y = Y[~idx]
 
-    binx = np.round(X/dx).astype(int)
-    biny = np.round(Y/dx).astype(int)
+    idx = (np.abs(X) >= (extent - dx)) | (np.abs(Y) >= (extent - dx))
+    X = X[~idx]
+    Y = Y[~idx]
 
-    binx += resolution//2
-    biny += resolution//2
+    binx = np.round(X / dx).astype(int)
+    biny = np.round(Y / dx).astype(int)
+
+    binx += resolution // 2
+    biny += resolution // 2
 
     img = np.zeros(shape=c.shape[:2])
-    for i,j in tqdm(zip(binx, biny)):
-        img[i,j] += 1
+    for i, j in tqdm(zip(binx, biny)):
+        img[i, j] += 1
 
     return img
 
 
-
 c = ph.Canvas(resolution, resolution, extent=extent)
-dx = (2*c.extent)/c.width
+dx = (2 * c.extent) / c.width
 
 ITR = [100, 200, 300]
 for k, iterations in enumerate(ITR):
-    
+
     X, Y = get_iterations(N, alpha, iterations=iterations)
 
     img = pts_to_bins(X, Y, resolution, dx)
@@ -68,7 +75,7 @@ for k, iterations in enumerate(ITR):
     img *= 255
     img *= 1.2
     img = img.astype(c.img.dtype)
-    c.img[:,:,k] = img
+    c.img[:, :, k] = img
 
 
 c.show()
