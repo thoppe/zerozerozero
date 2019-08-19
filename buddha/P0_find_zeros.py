@@ -103,12 +103,28 @@ def pts_to_bins(X, Y, resolution, dx):
     binx += resolution // 2
     biny += resolution // 2
 
-    img = np.zeros(shape=c.shape[:2])
+    img = np.zeros(shape=(resolution, resolution))
+    
+    #print(binx, biny)
+    #exit()
+
     for i, j in tqdm(zip(binx, biny)):
         img[i, j] += 1
 
     return img
 
+def bins_to_image(counts, resolution):
+    
+    _, bins = np.histogram(counts.ravel(), bins=255)
+    norm_color = np.digitize(counts, bins,True)
+
+    img = norm_color.astype(np.uint8)
+    
+    #img = counts / counts.max()
+    #img *= 255
+    #img *= 1.2
+
+    return img
 
 c = ph.Canvas(resolution, resolution, extent=extent)
 dx = (2 * c.extent) / c.width
@@ -121,22 +137,10 @@ for k, iterations in enumerate(ITR):
     print(f"Found {len(X)//10**6}*10**6 points")
 
     counts = pts_to_bins(X, Y, resolution, dx)
-
-    _, bins = np.histogram(counts.ravel(), bins=255)
-    norm_color = np.digitize(counts, bins,True)
-
-    img = norm_color
-    
-    #img = counts / counts.max()
-    #img *= 255
-    #img *= 1.2
-
-    img = img.astype(c.img.dtype)
-    #c.img[:, :, k] = img
-    
+    img = bins_to_image(counts, resolution)
+        
     c.img[:, :, 0] = img
     c.img[:, :, 1] = img
     c.img[:, :, 2] = img
-
 
 c.show()
