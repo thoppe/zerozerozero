@@ -103,14 +103,9 @@ def pts_to_bins(X, Y, resolution, dx):
     binx += resolution // 2
     biny += resolution // 2
 
-    img = np.zeros(shape=(resolution, resolution))
+    shape = (resolution, resolution)
+    img, _ = np.histogramdd([binx, biny], bins=shape)
     
-    #print(binx, biny)
-    #exit()
-
-    for i, j in tqdm(zip(binx, biny)):
-        img[i, j] += 1
-
     return img
 
 def bins_to_image(counts, resolution):
@@ -138,6 +133,7 @@ for k, iterations in enumerate(ITR):
 
     counts = pts_to_bins(X, Y, resolution, dx)
     img = bins_to_image(counts, resolution)
+
         
     c.img[:, :, 0] = img
     c.img[:, :, 1] = img
