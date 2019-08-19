@@ -16,6 +16,16 @@ iterations = 100
 
 def generate_starting_points(alpha):
 
+    # Find which points are within the set
+    x = np.linspace(-extent, extent, resolution)
+    C = np.meshgrid(x,x)
+    
+    print(C[0].shape)
+    exit()
+
+    Z = Z ** alpha + C
+    exit()
+
     C = np.random.normal(size=(N, 2))
     C = C[:, 0] + C[:, 1] * 1j
 
