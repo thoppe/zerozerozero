@@ -7,7 +7,7 @@ import sys, os
 import scipy.signal
 import pixelhouse as ph
 
-alpha = 2.0
+alpha = 1.5
 extent = 1.5
 resolution = 400
 
@@ -89,47 +89,37 @@ def get_iterations(N, alpha, iterations):
     data = np.vstack([data.real, data.imag]).T
     return data
 
-def pts_to_bins(pts, resolution, dx):
 
-    X, Y = pts.T
-    idx = (np.abs(X) >= (extent - dx)) | (np.abs(Y) >= (extent - dx))
-
-    pts = np.round(pts[~idx] / dx).astype(int)
-    pts += resolution // 2
-    
-    img, _ = np.histogramdd(pts, bins=(resolution, resolution))
+def pts_to_bins(pts, resolution, extent):
+    rg = [[-extent, extent], [-extent, extent]]
+    img, _ = np.histogramdd(pts, bins=(resolution, resolution), range=rg)
     return img
 
 
-def bins_to_image(counts, resolution):
-    
+def bins_to_image(counts, resolution, boost=1.0):
+
     _, bins = np.histogram(counts.ravel(), bins=255)
-    norm_color = np.digitize(counts, bins,True)
+    norm_color = np.digitize(counts, bins, True)
 
-    img = norm_color.astype(np.uint8)
-    
-    #img = counts / counts.max()
-    #img *= 255
-    #img *= 1.2
+    img = np.clip(norm_color * boost, 0, 255).astype(np.uint8)
 
     return img
+
 
 c = ph.Canvas(resolution, resolution, extent=extent)
-dx = (2 * c.extent) / c.width
 
-#ITR = [100, 200, 300]
-ITR = [100]
+ITR = [100, 200, 500]
+#ITR = [100]
 for k, iterations in enumerate(ITR):
 
     pts = get_iterations(N, alpha, iterations=iterations)
     print(f"Found {len(pts)//10**6}*10**6 points")
 
-    counts = pts_to_bins(pts, resolution, dx)
-    img = bins_to_image(counts, resolution)
-    exit()
-        
-    c.img[:, :, 0] = img
-    c.img[:, :, 1] = img
-    c.img[:, :, 2] = img
+    counts = pts_to_bins(pts, resolution, extent)
+    img = bins_to_image(counts, resolution, 2.0)
+
+    c.img[:, :, k] = img
+    #c.img[:, :, 1] = img
+    #c.img[:, :, 2] = img
 
 c.show()
