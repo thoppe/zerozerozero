@@ -8,13 +8,16 @@ import scipy.signal
 import pixelhouse as ph
 
 #alpha = 1.5
-alpha = 1.2
+alpha = 2.0
 
 extent = 1.5
 resolution = 800
 
 N = 50000 // 1
-parallel_iterations = 50
+parallel_iterations = 500
+
+def complex_equation(Z, C, alpha):
+    return Z ** 2 + C + (Z*C)**2
 
 def grid_targets(alpha, iterations):
     np.warnings.filterwarnings('ignore')
@@ -29,7 +32,7 @@ def grid_targets(alpha, iterations):
     # are still in the set given a few iterations
     Z = np.zeros_like(C)
     for _ in range(iterations):
-        Z = Z ** alpha + C
+        Z = complex_equation(Z, C, alpha)
     in_set = (~np.isnan(Z)).reshape([resolution, resolution])
 
     # Uncomment for a quick viz
@@ -77,7 +80,7 @@ def get_iterations(N, alpha, iterations, zi):
     
     #for _ in tqdm(range(iterations)):
     for _ in range(iterations):
-        Z = Z ** alpha + C
+        Z = complex_equation(Z, C, alpha)
         data.append(Z)
 
     # Drop the points that don't escape
@@ -149,7 +152,7 @@ for i, iterations in enumerate([100, 200, 500]):
 
     print(f"Final {counts.sum()/10**6:0.1f}*10**6 points")
 
-    img = bins_to_image(counts, resolution)
+    img = bins_to_image(counts, resolution, 2)
     
     #canvas.img[:, :] = img[:, :, np.newaxis]
     canvas.img[:, :, i] = img[:, :]
