@@ -7,16 +7,18 @@ import sys, os
 import scipy.signal
 import pixelhouse as ph
 
-alpha = 1.5
+#alpha = 1.5
+alpha = 1.2
+
 extent = 1.5
-resolution = 400
+resolution = 800
 
-N = 500000 // 1
-iterations = 100
+N = 50000 // 1
+parallel_iterations = 50
 
-
-def generate_starting_points(alpha, iterations):
-
+def grid_targets(alpha, iterations):
+    np.warnings.filterwarnings('ignore')
+    
     # Create a complex grid
     line = np.linspace(-extent, extent, resolution)
     grid = np.meshgrid(line, line)
@@ -43,12 +45,14 @@ def generate_starting_points(alpha, iterations):
 
     # Keep only the points on the boundry (>0,<9)
     targets = ((counts > 0) & (counts < 9)).ravel()
+    zi = C[targets]
+
+    return zi
+
+def generate_starting_points(C):
 
     # Pick from the targets
-    i, = np.where(targets)
-    n_targets = len(i)
-    idx = np.random.choice(n_targets, size=(N,))
-    zi = C[i[idx]]
+    zi = np.random.choice(C, size=(N,))
 
     # Add some noise, equal to twice the pixel size
     sigma = ((2 * extent) / resolution) * 2
@@ -63,19 +67,16 @@ def generate_starting_points(alpha, iterations):
 
     return zi
 
-    C = np.random.normal(size=(N, 2))
-    C = C[:, 0] + C[:, 1] * 1j
 
-    return C
+def get_iterations(N, alpha, iterations, zi):
 
-
-def get_iterations(N, alpha, iterations):
-
-    C = generate_starting_points(alpha, iterations)
+    C = generate_starting_points(zi)
     Z = np.zeros_like(C)
 
     data = []
-    for _ in tqdm(range(iterations)):
+    
+    #for _ in tqdm(range(iterations)):
+    for _ in range(iterations):
         Z = Z ** alpha + C
         data.append(Z)
 
@@ -93,33 +94,76 @@ def get_iterations(N, alpha, iterations):
 def pts_to_bins(pts, resolution, extent):
     rg = [[-extent, extent], [-extent, extent]]
     img, _ = np.histogramdd(pts, bins=(resolution, resolution), range=rg)
-    return img
+    counts = img.astype(np.uint64)
+    return counts
 
 
 def bins_to_image(counts, resolution, boost=1.0):
 
-    _, bins = np.histogram(counts.ravel(), bins=255)
-    norm_color = np.digitize(counts, bins, True)
+    #_, bins = np.histogram(counts.ravel(), bins=255)
+    #norm_color = np.digitize(counts, bins, True)
 
+    norm_color = (counts / counts.max())*255
     img = np.clip(norm_color * boost, 0, 255).astype(np.uint8)
 
     return img
 
 
-c = ph.Canvas(resolution, resolution, extent=extent)
 
+import ray
+ray.init()
+
+@ray.remote
+def compute_set(
+        N, alpha, iterations, resolution, extent,
+        zi, seed=None
+):
+    np.warnings.filterwarnings('ignore')
+    np.random.seed(seed)
+        
+    pts = get_iterations(N, alpha, iterations, zi)
+    counts = pts_to_bins(pts, resolution, extent)
+    print(f"Found {counts.sum()/10**6:0.1f}*10**6 points")
+
+    return counts
+
+#iterations = 500
+
+object_ids = []
+canvas = ph.Canvas(resolution, resolution, extent=extent)
+
+for i, iterations in enumerate([100, 200, 500]):
+
+    zi = grid_targets(alpha, iterations)
+
+    # Drop the objects into the queue
+    for k in range(parallel_iterations):
+        args = (N, alpha, iterations, resolution, extent, zi)
+        obj = compute_set.remote(*args, seed=k)
+        object_ids.append(obj)
+
+    # Accumulate the results
+    counts = np.zeros((resolution, resolution), dtype=np.uint64)
+    for obj in object_ids:
+        counts += ray.get(obj)
+
+    print(f"Final {counts.sum()/10**6:0.1f}*10**6 points")
+
+    img = bins_to_image(counts, resolution)
+    
+    #canvas.img[:, :] = img[:, :, np.newaxis]
+    canvas.img[:, :, i] = img[:, :]
+    
+canvas.show()
+
+'''
 ITR = [100, 200, 500]
-#ITR = [100]
+ITR = [100]
 for k, iterations in enumerate(ITR):
 
-    pts = get_iterations(N, alpha, iterations=iterations)
-    print(f"Found {len(pts)//10**6}*10**6 points")
+    img = computer_set(N, alpha, iterations, resolution, extent)
+    #c.img[:, :, k] = img
+    c.img[:, :] = img[:, :, np.newaxis]
+    #c.img[:, :, k] = img
+'''
 
-    counts = pts_to_bins(pts, resolution, extent)
-    img = bins_to_image(counts, resolution, 2.0)
-
-    c.img[:, :, k] = img
-    #c.img[:, :, 1] = img
-    #c.img[:, :, 2] = img
-
-c.show()
