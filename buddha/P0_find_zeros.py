@@ -1,23 +1,35 @@
-import mpmath as mp
 import numpy as np
-import random
 from tqdm import tqdm
 import joblib
 import sys, os
 import scipy.signal
 import pixelhouse as ph
+import h5py
+import ray
+from ray.tune.util import pin_in_object_store, get_pinned_object
 
 #alpha = 1.5
 alpha = 2.0
 
 extent = 1.5
-resolution = 800
 
-N = 50000 // 1
-parallel_iterations = 500
+# 3840x2160p is youtube 4K 
+#resolution = 1600
+resolution = 2048
+
+N = 50000
+parallel_iterations = 800
+
+save_dest = 'data/points'
+os.system(f'mkdir -p {save_dest}')
+
+ray.init()
+
+ITERS = [100,]# 200, 500]
+
 
 def complex_equation(Z, C, alpha):
-    return Z ** 2 + C + (Z*C)**2
+    return Z**2 + C
 
 def grid_targets(alpha, iterations):
     np.warnings.filterwarnings('ignore')
@@ -32,7 +44,8 @@ def grid_targets(alpha, iterations):
     # are still in the set given a few iterations
     Z = np.zeros_like(C)
     for _ in range(iterations):
-        Z = complex_equation(Z, C, alpha)
+        Z = Z**2 + C
+        #Z = complex_equation(Z, C, alpha)
     in_set = (~np.isnan(Z)).reshape([resolution, resolution])
 
     # Uncomment for a quick viz
@@ -80,7 +93,8 @@ def get_iterations(N, alpha, iterations, zi):
     
     #for _ in tqdm(range(iterations)):
     for _ in range(iterations):
-        Z = complex_equation(Z, C, alpha)
+        Z = Z**2 + C
+        #Z = complex_equation(Z, C, alpha)
         data.append(Z)
 
     # Drop the points that don't escape
@@ -113,60 +127,94 @@ def bins_to_image(counts, resolution, boost=1.0):
 
 
 
-import ray
-ray.init()
-
 @ray.remote
 def compute_set(
         N, alpha, iterations, resolution, extent,
-        zi, seed=None
+        #zi, seed=None
+        zi_obj, seed=None
+        
 ):
     np.warnings.filterwarnings('ignore')
     np.random.seed(seed)
+
+    zi = get_pinned_object(zi_obj)
         
     pts = get_iterations(N, alpha, iterations, zi)
     counts = pts_to_bins(pts, resolution, extent)
-    print(f"Found {counts.sum()/10**6:0.1f}*10**6 points")
+    #print(f"Found {counts.sum()/10**6:0.1f}*10**6 points")
 
     return counts
 
 #iterations = 500
 
-object_ids = []
-canvas = ph.Canvas(resolution, resolution, extent=extent)
+#ITERS = [100, 200, 500]
 
-for i, iterations in enumerate([100, 200, 500]):
 
-    zi = grid_targets(alpha, iterations)
+for i, iterations in enumerate(ITERS):
+
+    # Construct an empty file with the arguments
+    f_save = os.path.join(
+        save_dest,
+        f'{iterations}_{resolution}_{alpha:0.5f}.h5',
+    )
+    if not os.path.exists(f_save):
+        with h5py.File(f_save, 'w') as h5:
+            h5.attrs['resolution'] = resolution
+            h5.attrs['iterations'] = iterations
+            h5.attrs['extent'] = extent
+            h5.attrs['alpha'] = alpha
+            h5['counts'] = np.zeros(
+                shape=(resolution,resolution), dtype=np.uint32)
+
+    h5 = h5py.File(f_save, 'r+')
+
+    if 'zi' not in h5:
+        zi = grid_targets(alpha, iterations)
+        h5['zi'] = zi
+    else:
+        zi = h5['zi'][...]
 
     # Drop the objects into the queue
+    object_ids = []
+
+    zi_obj = pin_in_object_store(zi)
+
     for k in range(parallel_iterations):
-        args = (N, alpha, iterations, resolution, extent, zi)
+        args = (N, alpha, iterations, resolution, extent, zi_obj)
         obj = compute_set.remote(*args, seed=k)
         object_ids.append(obj)
 
     # Accumulate the results
     counts = np.zeros((resolution, resolution), dtype=np.uint64)
-    for obj in object_ids:
-        counts += ray.get(obj)
 
+
+    with tqdm(total=len(object_ids)) as progress:
+        while len(object_ids):
+            obj, object_ids = ray.wait(object_ids, num_returns=1)
+            counts += ray.get(obj[0]).copy()
+            progress.update()
+        
+    print(f"Intermediate {counts.sum()/10**6:0.1f}*10**6 points")
+
+    h5['counts'][...] = h5['counts'][...] + counts
+    counts = h5['counts'][...]
+    h5.close()
+    
     print(f"Final {counts.sum()/10**6:0.1f}*10**6 points")
 
-    img = bins_to_image(counts, resolution, 2)
+
+canvas = ph.Canvas(resolution, resolution, extent=extent)
+
+for i, iterations in enumerate(ITERS):
+    f_save = os.path.join(
+        save_dest,
+        f'{iterations}_{resolution}_{alpha:0.5f}.h5',
+    )
+    with h5py.File(f_save, 'r') as h5:
+        counts = h5['counts'][...]
+
+    img = bins_to_image(counts, resolution, 2)   
+    canvas.img[:, :] = img[:, :, np.newaxis]
+    #canvas.img[:, :, i] = img[:, :]
     
-    #canvas.img[:, :] = img[:, :, np.newaxis]
-    canvas.img[:, :, i] = img[:, :]
-    
-canvas.show()
-
-'''
-ITR = [100, 200, 500]
-ITR = [100]
-for k, iterations in enumerate(ITR):
-
-    img = computer_set(N, alpha, iterations, resolution, extent)
-    #c.img[:, :, k] = img
-    c.img[:, :] = img[:, :, np.newaxis]
-    #c.img[:, :, k] = img
-'''
-
+canvas.resize(0.5).show()
