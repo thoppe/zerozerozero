@@ -3,11 +3,9 @@ from tqdm import tqdm
 import joblib
 import sys, os, glob
 import scipy.signal
-import pixelhouse as ph
 import h5py
 import joblib
 import tempfile
-
 
 alpha = 1.5
 #alpha = 2.0
@@ -183,32 +181,3 @@ for i, iterations in enumerate(ITERS):
     print(f"Final {counts.sum()/10**6:0.1f}*10**6 points")
 
 ##########################################################################
-
-import pixelhouse
-
-def bins_to_image(counts, resolution, boost=1.0):
-
-    # _, bins = np.histogram(counts.ravel(), bins=255)
-    # norm_color = np.digitize(counts, bins, True)
-
-    norm_color = (counts / counts.max()) * 255
-    img = np.clip(norm_color * boost, 0, 255).astype(np.uint8)
-
-    return img
-
-
-canvas = ph.Canvas(resolution, resolution, extent=extent)
-
-for i, iterations in enumerate(ITERS):
-    f_save = os.path.join(
-        save_dest, f"{iterations}_{resolution}_{alpha:0.5f}.h5"
-    )
-    
-    with h5py.File(f_save, "r") as h5:
-        counts = h5["counts"][...]
-
-    img = bins_to_image(counts, resolution, 2)
-    canvas.img[:, :] = img[:, :, np.newaxis]
-    # canvas.img[:, :, i] = img[:, :]
-
-canvas.resize(0.5).show()
