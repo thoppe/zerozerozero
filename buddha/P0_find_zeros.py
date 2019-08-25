@@ -8,31 +8,40 @@ from numba import njit, jit, prange
 
 np.warnings.filterwarnings("ignore")
 
-alpha = 1.5
-#alpha = 2.0
+alpha = 2.0
+# alpha = 2.0
 extent = 1.5
+np.random.seed(42)
 
 # 3840x2160p is youtube 4K
 # resolution = 1600
-resolution = 2048
+# resolution = 2048
+resolution = 2048 // 8
 
-chunk_size = 50000*10
-n_chunks = 40
-iterations = 500
+chunk_size = 50000
+n_chunks = 10
+iterations = 100
 
 save_dest = "data/points"
 os.system(f"mkdir -p {save_dest}")
 
+
+# Multiplying by k*Z**2 gives a rotation
+# adding a constant removes parts of it {-1,1} seems reasonable
+# Good extra factors on their own exp([-1,1]*Z**2), cos, sin, cosh, sinh, sinc
+
+
 @njit(parallel=True)
 def complex_equation(Z, C, alpha):
-    return Z ** alpha + C
+    return C + np.sinc(Z ** 2)
+
 
 @njit(parallel=True)
 def generate_starting_points(C, N):
-    '''
+    """
     From a list of starting complex numbers, choose N points
     at some distance sigma randomly from them.
-    '''
+    """
 
     # Pick from the targets
     zi = np.random.choice(C, size=(N,))
@@ -43,6 +52,7 @@ def generate_starting_points(C, N):
     zi += np.random.normal(0.0, sigma, size=(N,)) * 1j
 
     return zi
+
 
 def grid_targets(alpha, iterations):
 
@@ -55,7 +65,7 @@ def grid_targets(alpha, iterations):
     # Map Mandelbrot over it a few times to find which points
     # are still in the set given a few iterations
     Z = np.zeros_like(C)
-    #for _ in tqdm(range(iterations)):
+    # for _ in tqdm(range(iterations)):
     for _ in tqdm(range(iterations)):
         Z = complex_equation(Z, C, alpha)
 
@@ -80,6 +90,7 @@ def grid_targets(alpha, iterations):
     print(f"Boundary points are {targets.mean()*100:0.2f}% pixels")
 
     return zi
+
 
 def get_iterations(N, alpha, iterations, zi):
 
@@ -110,6 +121,7 @@ def pts_to_bins(pts, resolution, extent):
     counts = img.astype(np.uint64)
     return counts
 
+
 def compute_set(chunk_size, alpha, iterations, resolution, extent):
     counts = np.zeros((resolution, resolution), dtype=np.uint64)
 
@@ -120,20 +132,15 @@ def compute_set(chunk_size, alpha, iterations, resolution, extent):
     return counts
 
 
-
 # Construct an empty file with the arguments
-f_save = os.path.join(
-    save_dest, f"{iterations}_{resolution}_{alpha:0.5f}.h5"
-)
+f_save = os.path.join(save_dest, f"{iterations}_{resolution}_{alpha:0.5f}.h5")
 if not os.path.exists(f_save):
     with h5py.File(f_save, "w") as h5:
         h5.attrs["resolution"] = resolution
         h5.attrs["iterations"] = iterations
         h5.attrs["extent"] = extent
         h5.attrs["alpha"] = alpha
-        h5["counts"] = np.zeros(
-            shape=(resolution, resolution), dtype=np.uint32
-        )
+        h5["counts"] = np.zeros(shape=(resolution, resolution), dtype=np.uint32)
 
 h5 = h5py.File(f_save, "r+")
 
