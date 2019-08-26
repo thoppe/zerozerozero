@@ -5,7 +5,9 @@ np.warnings.filterwarnings("ignore")
 
 # 3840x2160p is youtube 4K
 resolution = 2048 // 8
-extent = 1.5
+#extent = 1.5
+extent = 2.5
+
 
 # Multiplying by k*Z**2 gives a rotation
 # adding a constant removes parts of it {-1,1} seems reasonable
@@ -35,9 +37,9 @@ def complex_equation(Z, C, coeffs):
     return x
 
 
-def grid_targets(iterations, coeffs):
+def grid_targets(iterations, coeffs, ):
 
-    coeffs = np.random.uniform(-1, 1, size=(n_terms,))
+    #coeffs = np.random.uniform(-1, 1, size=(n_terms,))
 
     # Create a complex grid
     line = np.linspace(-extent, extent, resolution)
@@ -50,7 +52,7 @@ def grid_targets(iterations, coeffs):
     Z = np.zeros_like(C)
 
     coeffs = np.array(coeffs)
-    coeffs /= np.linalg.norm(coeffs)
+    #coeffs /= np.linalg.norm(coeffs)
 
     for _ in range(iterations):
         Z = complex_equation(Z, C, coeffs)
