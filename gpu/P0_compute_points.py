@@ -25,10 +25,6 @@ grid_size = (resolution * scale_grid, resolution * scale_grid)
 dtype = torch.complex128
 torch.set_grad_enabled(False)
 
-real_grid = linspace(real_min, real_max, grid_size[0]).view(-1, 1)
-imag_grid = linspace(imag_min, imag_max, grid_size[1]).view(1, -1)
-escape_magnitude = np.max(np.abs([real_min, real_max, imag_min, imag_max])) ** 2
-
 # Make sure we are using a square image
 assert (real_max - real_min) == (imag_max - imag_min)
 
@@ -38,22 +34,30 @@ def iterating_function(Z, C, a2=1.0, a1=0.0, a0=1.0):
 
 
 def is_point_escaped(ZX):
+    escape_magnitude = 2
     idx0 = torch.isnan(ZX)
     idx1 = torch.isinf(ZX)
     idx2 = torch.abs(ZX) > escape_magnitude
     return idx0 | idx1 | idx2
 
 
-# Combine the real and imaginary grids to form a complex grid
+# Build a grid on the complex plane, we start looking here
+real_grid = linspace(real_min, real_max, grid_size[0]).view(-1, 1)
+imag_grid = linspace(imag_min, imag_max, grid_size[1]).view(1, -1)
+
 C = torch.complex(real_grid, imag_grid)
 C = C.reshape([resolution * resolution * scale_grid ** 2]).to(device)
 
 # Determine which starting points are near the Mandelbrot set
 Z = torch.zeros_like(C)
-for n in range(starting_iterations):
-    Z = iterating_function(Z, C)
 
-idx = ~is_point_escaped(Z)
+escape_time = torch.zeros_like(C, dtype=torch.int32)
+for n in tqdm(range(starting_iterations)):
+    Z = iterating_function(Z, C)
+    idx = (is_point_escaped(Z)) & (escape_time == 0)
+    escape_time[idx] = n
+
+idx = escape_time == 0
 
 # Running using CPU gets 800% CPU and ~  6it/sec on 8192 resolution
 # Running using GPU gets 100% GPU and ~323it/sec on 8192 resolution
